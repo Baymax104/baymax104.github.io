@@ -133,7 +133,8 @@
   }
 
   .highlight .bp {
-    color: #0550ae;
+    // color: #0550ae;
+    color: var(--element-keyword-color)
   }
 
   .highlight .ne {
