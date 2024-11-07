@@ -1,0 +1,10 @@
+steps:
+- name: git add
+  command: git add .
+
+- name: git commit
+  command: 'git commit -m "feat: 文章更新"'
+
+- name: git push
+  command: git push origin main
+
