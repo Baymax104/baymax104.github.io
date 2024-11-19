@@ -192,7 +192,7 @@ pub trait Summary {
 }
 ```
 
-### Trait Bound
+### Trait约束
 
 可以将函数的参数指定为实现了某个Trait的类型
 
@@ -205,18 +205,16 @@ pub trait Summary {
 pub fn notify(item: &impl Summary) -> &impl Summary { item }
 ```
 
-以上实际是Trait Bound的语法糖
+以上实际是Trait约束（Trait Bound）的语法糖
 
 ```rust
-// 使用Trait Bound可以更加灵活地指定impl Summary是同一个类型还是不同的类型
-
 // 限制必须是实现Summary的同一个类型
 fn notify<T: Summary>(item: &T) -> &T { item }
 // 等价于fn notify1(item: &impl Summary) -> &impl Summary { item }
 fn notify1<T: Summary, U: Summary>(item: &T) -> &U { item }
 ```
 
-在实现方法时指定Trait Bound可以有条件地实现方法
+在实现方法时指定Trait约束可以有条件地实现方法
 
 ```rust
 struct Pair<T> {
@@ -252,14 +250,14 @@ fn notify1<T: Summary + Display>(item: &T) {
 }
 ```
 
-使用`where`关键字简化Trait Bound
+使用`where`关键字简化Trait约束
 
 ```rust
 fn some_function<T: Display + Clone, U: Clone + Debug>(t: &T, u: &U) -> i32 {
     // ...
 }
 
-// 在where语句中统一设置Trait Bound
+// 在where语句中统一设置Trait约束
 fn some_function1<T, U>(t: &T, u: &U) -> i32
 where
     T: Display + Clone,
@@ -269,9 +267,9 @@ where
 }
 ```
 
-### Trait Object
+### Trait对象
 
-当在返回值类型上使用Trait Bound时，rust不允许返回不同类型的对象，即使它们满足Trait Bound
+当在返回值类型上使用Trait约束时，rust不允许返回不同类型的对象，即使它们满足Trait约束
 
 例如下面的代码，编译无法通过
 
@@ -293,16 +291,16 @@ fn returns_summarizable(switch: bool) -> impl Summary {
 
 编译无法通过是因为rust无法在编译期确定返回值类型，函数可能返回Post类型，也可能返回Weibo类型，只能在运行时确定
 
-当代码中引入多态时，需要一种机制确定实际调用的类型，这称为**分发**，分发分为静态分发和动态分发
+当代码中引入多态时，需要一种机制确定实际调用的类型，这称为**分发**，分发分为**静态分发**和**动态分发**
 
 - 静态分发：在编译期确定实际类型
 - 动态分发：在运行时确定实际类型
 
 rust默认使用单态化生成具体类型代码，在编译期就确定了实际类型，即实现了静态分发。但对于上述代码无法在编译期确定实际类型，只能在运行时确定实际类型的情况，就需要使用动态分发
 
-从类型的角度看，一个Trait是包含了具有某种特性的类型的集合，**Trait本身也可以看做一个类型**，将Trait作为类型的特性在rust中通过Trait Object实现，同时rust通过Trait Object实现了动态分发
+从类型的角度看，一个Trait是包含了具有某种特性的类型的集合，**Trait本身也可以看做一个类型**，将Trait作为类型的特性在rust中通过Trait对象（Trait Object）实现，同时rust通过Trait对象实现了动态分发
 
-例如，通过Trait Object在Vec中保存不同的类型，定义以下Trait和类型
+例如，通过Trait对象在Vec中保存不同的类型，定义以下Trait和类型
 
 ```rust
 trait A {}
@@ -319,17 +317,17 @@ impl A for AImpl2 {}
 let v: Vec<&A> = vec![&AImpl1, &AImpl2];
 ```
 
-这段代码会被编译器报错，因为这里没有使用Trait Object，使用Trait Object需要加上`dyn`关键字，以下代码可以编译通过
+这段代码会被编译器报错，因为这里没有使用Trait对象，使用Trait对象需要加上`dyn`关键字，以下代码可以编译通过
 
 ```rust
 let v: Vec<&dyn A> = vec![&AImpl1, &AImpl2];
 ```
 
-这里指定Vec的泛型时，我们将`A`看做了一个类型，而Trait本身并不是类型，此时就需要Trait Object来实现Trait的类型特性（私以为可以将Trait Object理解为编译时类型，实现了Trait的类型为运行时类型）
+这里指定Vec的泛型时，我们将`A`看做了一个类型，而Trait本身并不是类型，此时就需要Trait对象来实现Trait的类型特性（私以为可以将Trait对象理解为编译时类型，实现了Trait的实际类型为运行时类型）
 
 **实现多态的效果**
 
-通过Trait Object，可以实现多态中父类类型引用子类对象的效果
+通过Trait对象，可以实现多态中父类类型引用子类对象的效果
 
 ```rust
 trait A {
@@ -340,7 +338,7 @@ trait B {
     fn b(&self);
 }
 
-// 在B的Trait Object上实现A Trait
+// 在B的Trait对象上实现A Trait
 impl A for dyn B {
     fn a(&self) {
         println!("A");
@@ -348,6 +346,11 @@ impl A for dyn B {
 }
 
 struct BImpl;
+
+// BImpl本身的方法
+impl BImpl {
+    fn fun(&self) {}
+}
 
 // 在BImpl上实现B Trait
 impl B for BImpl {
@@ -361,6 +364,7 @@ fn main() {
     let b: &dyn B = &BImpl;
     b.a();
     b.b();
+    b.fun();  // 不合法，在编译期只知道b是&dyn B类型，不能调用BImpl本身的方法
 }
 ```
 
@@ -379,6 +383,7 @@ interface B extends A {
 }
 
 class BImpl implements B {
+    void fun() {}
     @Override
     public void b() {
         System.out.println("B");
@@ -392,7 +397,7 @@ public static void main(String[] args) {
 }
 ```
 
-当我们使用Trait Object时，我们也就使用了动态分发，编译器会在运行时才确定Trait的实际类型，下面的代码可以编译通过
+当我们使用Trait对象时，也就使用了动态分发，编译器会在运行时确定Trait的实际类型，下面的代码可以编译通过
 
 ```rust
 struct BImpl1;
@@ -413,7 +418,9 @@ fn main() {
 }
 ```
 
-需要注意的是，Trait Object不能作为值类型出现，下面的代码无法编译通过
+**Trait对象是动态大小类型**
+
+需要注意的是，Trait对象本身是动态大小类型，无法在编译期确定大小，因此，`dyn Trait`不能作为值类型使用，而Trait对象的引用的大小是固定的，因此需要通过引用或者智能指针来使用Trait对象，下面的代码无法编译通过
 
 ```rust
 // 无法编译通过
@@ -424,13 +431,141 @@ fn foo(a: dyn A) {
 let b: dyn B = BImpl;  // 无法编译通过
 ```
 
-这是因为Trait Object的实际类型可以是任意实现了该Trait的类型，**rust无法在编译期确定实际类型的大小**，无法在栈上分配内存，因此需要引用或者智能指针
+**Trait对象的限制**
 
-**Trait Object的限制**
+不是所有Trait都拥有Trait对象，只有满足**对象安全**的Trait才能使用Trait对象，对象安全要求Trait的所有方法都满足以下条件
 
+- 方法参数必须包含`self`或`Self`且不能使用`self`或`Self`的**值类型**
 
+  在类型T实现Trait时，`self`和`Self`会转换为实际类型，使用`self`或`Self`的值类型时，表示实际类型的实例需要移动或拷贝，而使用Trait对象时，无法确定在编译期确定实际类型，也就无法确定实际类型数据应该进行移动还是拷贝，下面的代码无法编译通过
 
+  ```rust
+  trait A {
+      fn a(self);
+  }
+  
+  struct AImpl1;
+  
+  impl A for AImpl1 {
+      fn a(self) {
+          println!("a1");
+      }
+  }
+  
+  fn main() {
+      let mut a: &dyn A = &AImpl1;
+      a.a();  // 不合法，编译期无法确定a的实际类型，无法确定a方法中实例应该移动还是拷贝
+  }
+  ```
 
+- `Self`不能用于方法的返回值
+
+  使用Trait对象时，无法在编译期确定类型，不能保证参数中的`Self`和返回值类型`Self`是同一个类型
+
+  ```rust
+  trait A {
+      // 两个位置的Self不能在编译期保证是相同的类型
+      fn a(&self) -> &Self;
+  }
+  ```
+
+- 方法不能使用泛型参数
+
+  方法中使用泛型参数，编译器会在编译期对实际类型进行泛型单态化，而使用Trait对象时，无法在编译期确定实际类型，因此也就无法进行单态化。若在每个实际类型的虚表中记录所有泛型的具体实现，则会造成极大的开销。
 
 ### 动态分发
+
+Trait对象的动态分发通过虚表（vtable）机制实现，**Trait对象的引用**是一个胖指针，其中存储了两个指针，**占两个指针的大小**
+
+- data指针：指向实际类型数据的指针
+- vtable指针：指向虚表的指针，其中包含了所有动态分发的方法
+
+下图展示了`Box<T>`和`Box<dyn Trait>`的区别，`Box<T>`只有一个指向堆内存中的数据的指针ptr，`Box<dyn Trait>`中的ptr（data指针）指向堆内存中的实际类型数据，vptr（vtable指针）指向编译器为T类型生成的Trait虚表
+
+![image-20241119153506962](assets/image-20241119153506962.png)
+
+**虚表的基本布局**
+
+rust中的虚表可以分为header和entry两个部分
+
+- header
+
+  虚表都包含一个header，其中包含三个`usize`大小的字段，分别是`drop_in_place`、`size`和`align`
+
+  - `drop_in_place`：指向销毁函数的指针
+  - `size`：实际类型对象的大小
+  - `align`：实际类型对象的内存对齐值
+
+  通过以上三个字段，使得Trait对象可以被销毁和释放。当销毁Trait对象时，首先调用`drop_in_place`指向的函数，销毁实际类型对象，之后将`size`和`align`传入`dealloc`函数中释放堆内存
+
+- entry
+
+  entry部分保存了实际类型实现的Trait方法的地址
+
+  例如，T类型实现了Trait，编译器为T类型生成的Trait虚表结构如下所示
+
+  ```rust
+  trait Trait {
+      fn fun1(&self);
+      fn fun2(&self);
+      fn fun3(&self);
+  }
+  ```
+
+  ```
+  +--------------------------+
+  | fn drop_in_place(*mut T) |    -->  drop_in_place
+  +--------------------------+
+  | size of T                |    -->  size
+  +--------------------------+
+  | align of T               |    -->  align
+  +--------------------------+
+  | fn <T as Trait>::fun1    |    -->  fun1具体实现的地址
+  +--------------------------+
+  | fn <T as Trait>::fun2    |    -->  fun2具体实现的地址
+  +--------------------------+
+  | fn <T as Trait>::fun3    |    -->  fun3具体实现的地址
+  +--------------------------+
+  ```
+
+**动态分发的工作流程**
+
+以下面的代码为例
+
+```rust
+trait A {
+    fn a(&self);
+}
+
+struct AImpl1;
+struct AImpl2;
+
+impl A for AImpl1 {
+    fn a(&self) {
+        println!("a1");
+    }
+}
+
+impl A for AImpl2 {
+    fn a(&self) {
+        println!("a2");
+    }
+}
+
+fn main() {
+    let mut a: &dyn A = &AImpl1;
+    a.a();  // 输出a1
+    a = &AImpl2;
+    a.a();  // 输出a2
+}
+```
+
+在编译期，编译器为`AImpl1`和`AImpl2`分别生成一张A的虚表，其中分别包含了`AImpl1`和`AImpl2`的header信息和实现的a方法的地址
+
+在运行时
+
+1. `let mut a: &dyn A = &AImpl1;`：a中的data指针指向`AImpl1`的实例，vtable指针指向`AImpl1`的虚表
+2. `a.a();`：调用`AImpl1`虚表中的a方法
+3. `a = &AImpl2;`：a中的data指针指向`AImpl2`的实例，vtable指针指向`AImpl2`的虚表
+4. `a.a();`：调用`AImpl2`虚表中的a方法
 
