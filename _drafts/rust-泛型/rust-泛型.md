@@ -130,6 +130,18 @@ let arr = [1, 2, 3];
 foo::<{ calculate_size() }>(&arr);  // 在编译期得出foo的参数类型为&[i32; 3]
 ```
 
+### 默认泛型参数
+
+泛型参数定义时可以使用默认值
+
+```rust
+trait Add<RHS=Self> {
+    type Output;
+    // rhs的类型默认与实现的类型相同
+    fn add(self, rhs: RHS) -> Self::Output;
+}
+```
+
 ### 泛型的性能
 
 rust的泛型与java不同，java仅在编译期检查类型，之后进行类型擦除，在运行时会丢失类型信息，而rust在编译时，会生成不同具体类型的代码，再将泛型定义替换为具体定义，避免了类型擦除问题，这称为**单态化**
@@ -568,4 +580,44 @@ fn main() {
 2. `a.a();`：调用`AImpl1`虚表中的a方法
 3. `a = &AImpl2;`：a中的data指针指向`AImpl2`的实例，vtable指针指向`AImpl2`的虚表
 4. `a.a();`：调用`AImpl2`虚表中的a方法
+
+### 关联类型
+
+在定义Trait时，使用`type`关键字定义一个自定义类型，可以在定义特征时简化泛型
+
+```rust
+// 若使用泛型，则需要写成Iterator<T>，使用关联类型，避免添加过多泛型
+trait Iterator {
+    type Item;
+    fn next(&mut self) -> Option<Self::Item>;
+}
+
+impl Iterator for Counter {
+    type Item = u32;  // 在实现时，实现为具体类型
+    fn next(&mut self) -> Option<Self::Item> {
+        // ...
+    }
+}
+```
+
+关联类型也可以添加Trait约束
+
+```rust
+trait CacheableItem {
+    // 实现的关联类型必须满足Trait约束
+    type Address: Clone + fmt::Debug + Eq + Hash;
+    fn is_null(&self) -> bool;
+}
+
+impl CacheableItem for A {
+    type Address = u8;
+    fn is_null(&self) -> bool {
+        // ...
+    }
+}
+```
+
+### 同名方法调用
+
+当实现类型与Trait出现了同名方法时，rust优先调用实现类型的方法
 
