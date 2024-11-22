@@ -1,0 +1,69 @@
+---
+layout: post
+title: Rust基础——生命周期
+categories:
+- Rust
+tags:
+- Rust
+image:
+  path: assets/img/rust/rust.png
+---
+
+## 开始
+
+生命周期就是引用的有效作用域，用于避免悬垂引用问题
+
+一般情况下，rust会自动推导生命周期，但在一些特殊情况下，需要手动标注生命周期
+
+**生命周期标注改变任何引用的实际作用域**
+
+生命周期标注仅仅是声明一个约束，它不会改变任何引用的实际作用域，当使用声明了生命周期的引用或函数，若不满足约束，编译期会抛出错误
+
+## 标注语法
+
+使用`'`加一个小写字母表示一个生命周期，通常使用`'a`
+
+```rust
+&i32         // 一个引用
+&'a i32      // 具有显式生命周期的引用
+&'a mut i32  // 具有显式生命周期的可变引用
+```
+
+在函数签名中，需要在泛型的尖括号中声明生命周期标注
+
+```rust
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+```
+
+在结构体中使用引用作为字段，需要显式标注生命周期
+
+```rust
+struct ImportantExcerpt<'a> {
+    part: &'a str,
+}
+```
+
+实现结构体的方法时，也需要标注生命周期
+
+```rust
+struct ImportantExcerpt<'a> {
+    part: &'a str,
+}
+
+impl<'a> ImportantExcerpt<'a> {
+    fn level(&self) -> i32 {
+        3
+    }
+}
+```
+
+
+
+
+
