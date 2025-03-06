@@ -9,6 +9,7 @@ tags:
 - 大模型
 - 大模型开发
 date: 2025-03-05 20:21
+mermaid: true
 ---
 
 ## 基本概念
@@ -205,6 +206,18 @@ class Runnable(Generic[Input, Output], ABC):
     -   `content`：返回给模型的文本内容，用于解释工具执行的结果或上下文
     -   `tool_call_id`：工具调用id，与`ToolCall.id`对应
     -   `artifact`：工具执行的具体结果（如文件、自定义对象等），这些结果不应该直接传递给模型，应该传递到下游组件进行处理
+
+多轮对话中，消息的基本传递流程如下
+
+```mermaid
+graph LR
+    User(用户);
+    Dev(开发);
+    Model(聊天模型);
+    User-->|用户输入|Dev;
+    Dev-->|SystemMessage/HumanMessage|Model;
+    Model-->|AIMessage|Dev;
+```
 
 ### 提示词模板
 
@@ -747,6 +760,22 @@ for tool_call in ai_msg.tool_calls:
 ```python
 llm_with_tools.invoke(messages)
 ```
+
+聊天模型与工具的交互如下
+
+```mermaid
+sequenceDiagram
+	participant Model as 聊天模型;
+	participant Dev as 开发;
+	participant Tool as 工具;
+	Dev->>Model:带有工具参数的prompt;
+	Model->>Dev:从prompt提取的工具参数;
+	Dev->>Tool:调用工具;
+	Tool->>Dev:返回ToolMessage;
+	Dev->>Model:将ToolMessage返回聊天模型;
+```
+
+
 
 ### 第三方集成
 
