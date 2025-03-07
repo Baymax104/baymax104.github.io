@@ -365,19 +365,110 @@ print(texts[1])
 ```python
 text_splitter = RecursiveCharacterTextSplitter(
     separators=[
-        "\n\n",
-        "\n",
-        " ",
-        ".",
-        ",",
+        "\n\n", "\n", " ", ".", ",", "",
         "\u200b",  # Zero-width space
         "\uff0c",  # Fullwidth comma
         "\u3001",  # Ideographic comma
         "\uff0e",  # Fullwidth full stop
         "\u3002",  # Ideographic full stop
-        "",
     ],
     # Existing args
+)
+```
+
+### 聊天历史存储
+
+聊天历史存储提供了访问聊天历史的能力，可以将早期对话引入当前对话，langchain中实现了聊天历史存储（截止v0.2），在langchain的最新版本中推荐使用langgraph提供的持久化能力
+
+`RunnableWithMessageHistory`类可以包装任何链，跟踪链的输入和输出，并将它们作为消息附加到消息存储
+
+消息存储通过`BaseChatMessageHistory`类实现，langchain内置了多种类型的实现类，如SQL、Redis等
+
+![index_diagram](assets/message_history-4c13b8b9363beb4621d605bf6b5a34b4.png)
+
+构造`RunnableWithMessageHistory`需要以下参数
+
+- `chain`：被包装的链
+- `get_session_history`：一个函数，函数接受`sessihon_id`字符串，返回`BaseChatMessageHistory`类型对象
+- `input_messages_key`：当链的输入为一个字典时，指定该参数为值是消息列表的键
+- `output_messages_key`：当链的输出为一个字典时，指定该参数为值是消息列表的键
+- `history_messages_key`：当链的输入为一个字典时，指定该参数，以该参数为键保存历史消息
+- `history_factory_config`：该参数接受`ConfigurableFieldSpec`对象列表，配置`get_session_history`的参数
+
+e.g.
+
+```python
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_community.chat_models import ChatZhipuAI
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
+
+stlore = {}  # 使用全局存储
+
+def get_by_session_id(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in store:
+        store[session_id] = ChatMessageHistory()
+    return store[session_id]
+
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You're an assistant who's good at {ability}"),
+    MessagesPlaceholder(variable_name="history"),  # 历史记录
+    ("human", "{question}"),  # 消息列表
+])
+
+chain = prompt | model
+
+chain_with_history = RunnableWithMessageHistory(
+    chain,
+    get_by_session_id,
+    input_messages_key="question",  # 链的输入中值为消息列表的键
+    history_messages_key="history",  # 链的输入中值为历史记录的键
+)
+
+# 输入消息列表和其他值，config参数指定传入get_by_session_id函数的参数
+result = chain_with_history.invoke(
+    {"question": "What does cosine mean?"， "ability": "math"},
+    config={"configurable": {"session_id": "foo"}}
+)
+```
+
+当`get_session_history`函数接受多个参数时，需要设置`history_factory_config`，设置参数定义
+
+```python
+store = {}
+
+def get_session_history(user_id: str, conversation_id: str) -> BaseChatMessageHistory:
+    if (user_id, conversation_id) not in store:
+        store[(user_id, conversation_id)] = ChatMessageHistory()
+    return store[(user_id, conversation_id)]
+
+
+with_message_history = RunnableWithMessageHistory(
+    chain,
+    get_session_history=get_session_history,
+    input_messages_key="question",
+    history_messages_key="history",
+    history_factory_config=[
+        ConfigurableFieldSpec(
+            id="user_id",
+            annotation=str,
+            name="User ID",
+            description="Unique identifier for the user.",
+            default="",
+            is_shared=True,
+        ),
+        ConfigurableFieldSpec(
+            id="conversation_id",
+            annotation=str,
+            name="Conversation ID",
+            description="Unique identifier for the conversation.",
+            default="",
+            is_shared=True,
+        ),
+    ],
 )
 ```
 
@@ -805,8 +896,6 @@ sequenceDiagram
 	Tool->>Dev:返回ToolMessage;
 	Dev->>Model:将ToolMessage返回聊天模型;
 ```
-
-
 
 ### 第三方集成
 
