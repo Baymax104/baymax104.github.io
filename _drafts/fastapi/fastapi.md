@@ -428,7 +428,7 @@ async def read_items(x_token: Annotated[list[str] | None, Header()] = None):
 
 ### 响应模型
 
-使用Pydantic定义响应的数据模型，设置到路径装饰器的`response_model`参数
+使用Pydantic定义响应的数据模型，设置到路径装饰器的`response_model`参数，或直接标记为函数返回值类型
 
 ```python
 from typing import Any
@@ -456,5 +456,11 @@ async def read_items() -> Any:
         {"name": "Portal Gun", "price": 42.0},
         {"name": "Plumbus", "price": 32.0},
     ]
+    
+# 接口返回值类型指明返回模型
+@app.post("/items/")
+async def create_item(item: Item) -> Item:
+    return item
 ```
 
+fastapi中内置了`Response`类及其子类，可以表示不同种类的响应，常用的有`JSONResponse`和`RedirectResponse`等，fastapi使用Pydantic创建并验证返回类型，因此不支持Union类型

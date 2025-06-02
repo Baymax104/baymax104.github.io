@@ -354,7 +354,58 @@ class Person<T> {
 }
 ```
 
+### 索引签名
 
+可以通过字符串来访问对象的属性
 
+```typescript
+const obj: any = {
+    value: "test"
+}
+obj["value1"] = "test1"
 
+console.log(obj["value"])
+```
+
+在typescript中，索引签名必须是`string`或`number`类型
+
+**显式指定索引签名**
+
+```typescript
+const foo: {
+  [index: string]: { message: string };
+} = {};
+
+// 储存的东西必须符合结构
+// ok
+foo['a'] = { message: 'some message' };
+
+// Error, 必须包含 `message`
+foo['a'] = { messages: 'some message' };
+
+// 读取时，也会有类型检查
+// ok
+foo['a'].message;
+
+// Error: messages 不存在
+foo['a'].messages;
+```
+
+与字段声明结合使用
+
+```typescript
+// ok
+interface Foo {
+  [key: string]: number;
+  x: number;
+  y: number;
+}
+
+// Error
+interface Bar {
+  [key: string]: number;
+  x: number;
+  y: string; // Error: y 属性必须为 number 类型
+}
+```
 
