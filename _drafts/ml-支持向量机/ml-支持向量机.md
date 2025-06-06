@@ -2,10 +2,10 @@
 layout: post
 title: 《机器学习》——支持向量机
 categories:
-- Python
+- 人工智能
 - 机器学习
 tags:
-- Python
+- 人工智能
 - 机器学习
 - SVM
 - 支持向量机
